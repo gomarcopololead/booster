@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   BoosterConfig,
-  Logger,
-  ProviderLibrary,
   ReadModelInterface,
   EventEnvelope,
   ProjectionMetadata,
@@ -12,23 +10,16 @@ import {
   OptimisticConcurrencyUnexpectedVersionError,
   SequenceKey,
 } from '@boostercloud/framework-types'
-import { Promises, retryIfError, createInstance } from '@boostercloud/framework-common-helpers'
+import { Promises, retryIfError, createInstance, getLogger } from '@boostercloud/framework-common-helpers'
 
 export class ReadModelStore {
-  private config: BoosterConfig
-  private provider: ProviderLibrary
-  private logger: Logger
-
-  public constructor(config: BoosterConfig, logger: Logger) {
-    this.config = config
-    this.provider = config.provider
-    this.logger = logger
-  }
+  public constructor(readonly config: BoosterConfig) {}
 
   public async project(entitySnapshotEnvelope: EventEnvelope): Promise<void> {
+    const logger = getLogger(this.config, 'ReadModelStore#project')
     const projections = this.config.projections[entitySnapshotEnvelope.entityTypeName]
     if (!projections) {
-      this.logger.debug(
+      logger.debug(
         `[ReadModelStore#project] No projections found for entity ${entitySnapshotEnvelope.entityTypeName}. Skipping...`
       )
       return
@@ -41,12 +32,12 @@ export class ReadModelStore {
         const readModelID = this.joinKeyForProjection(entityInstance, projectionMetadata)
         const sequenceKey = this.sequenceKeyForProjection(entityInstance, projectionMetadata)
         if (!readModelID) {
-          this.logger.warn(
+          logger.warn(
             `Couldn't find the joinKey named ${projectionMetadata.joinKey} in entity snapshot of ${entityMetadata.class.name}. Skipping...`
           )
           return
         }
-        this.logger.debug(
+        logger.debug(
           '[ReadModelStore#project] Projecting entity snapshot ',
           entitySnapshotEnvelope,
           ` to build new state of read model ${readModelName} with ID ${readModelID}`,
@@ -54,7 +45,6 @@ export class ReadModelStore {
         )
 
         return await retryIfError(
-          this.logger,
           () =>
             this.applyProjectionToReadModel(
               entityInstance,
@@ -92,18 +82,16 @@ export class ReadModelStore {
     readModelID: UUID,
     sequenceKey?: SequenceKey
   ): Promise<unknown> {
+    const logger = getLogger(this.config, 'ReadModelStore#applyProjectionToReadModel')
     const readModel = await this.fetchReadModel(readModelName, readModelID, sequenceKey)
     const currentReadModelVersion: number = readModel?.boosterMetadata?.version ?? 0
     const newReadModel = this.projectionFunction(projectionMetadata)(entity, readModel)
 
     if (newReadModel === ReadModelAction.Delete) {
-      this.logger.debug(
-        `[ReadModelDelete#project] Deleting read model ${readModelName} with ID ${readModelID}:`,
-        readModel
-      )
-      return this.provider.readModels.delete(this.config, this.logger, readModelName, readModel)
+      logger.debug(`Deleting read model ${readModelName} with ID ${readModelID}:`, readModel)
+      return this.config.provider.readModels.delete(this.config, readModelName, readModel)
     } else if (newReadModel === ReadModelAction.Nothing) {
-      this.logger.debug(
+      logger.debug(
         `[ReadModelStore#project] Skipping actions for ${readModelName} with ID ${readModelID}:`,
         newReadModel
       )
@@ -114,18 +102,12 @@ export class ReadModelStore {
       ...readModel?.boosterMetadata,
       version: currentReadModelVersion + 1,
     }
-    this.logger.debug(
+    logger.debug(
       `[ReadModelStore#project] Storing new version of read model ${readModelName} with ID ${readModelID}:`,
       newReadModel
     )
 
-    return this.provider.readModels.store(
-      this.config,
-      this.logger,
-      readModelName,
-      newReadModel,
-      currentReadModelVersion
-    )
+    return this.config.provider.readModels.store(this.config, readModelName, newReadModel, currentReadModelVersion)
   }
 
   /**
@@ -137,13 +119,13 @@ export class ReadModelStore {
     readModelID: UUID,
     sequenceKey?: SequenceKey
   ): Promise<ReadModelInterface | undefined> {
-    this.logger.debug(
+    const logger = getLogger(this.config, 'ReadModelStore#fetchReadModel')
+    logger.debug(
       `[ReadModelStore#fetchReadModel] Looking for existing version of read model ${readModelName} with ID = ${readModelID}` +
         (sequenceKey ? ` and sequence key ${sequenceKey.name} = ${sequenceKey.value}` : '')
     )
-    const rawReadModels = await this.provider.readModels.fetch(
+    const rawReadModels = await this.config.provider.readModels.fetch(
       this.config,
-      this.logger,
       readModelName,
       readModelID,
       sequenceKey
@@ -159,6 +141,7 @@ export class ReadModelStore {
     return undefined
   }
 
+  // eslint-disable-next-line @typescript-eslint/ban-types
   public projectionFunction(projectionMetadata: ProjectionMetadata): Function {
     try {
       return (projectionMetadata.class as any)[projectionMetadata.methodName]

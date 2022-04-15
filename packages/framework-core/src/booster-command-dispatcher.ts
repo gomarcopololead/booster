@@ -1,7 +1,6 @@
 import {
   BoosterConfig,
   CommandEnvelope,
-  Logger,
   Register,
   InvalidParameterError,
   NotAuthorizedError,
@@ -9,14 +8,15 @@ import {
 } from '@boostercloud/framework-types'
 import { BoosterAuth } from './booster-auth'
 import { RegisterHandler } from './booster-register-handler'
-import { createInstance } from '@boostercloud/framework-common-helpers'
+import { createInstance, getLogger } from '@boostercloud/framework-common-helpers'
 import { applyBeforeFunctions } from './services/filter-helpers'
 
 export class BoosterCommandDispatcher {
-  public constructor(readonly config: BoosterConfig, readonly logger: Logger) {}
+  public constructor(readonly config: BoosterConfig) {}
 
   public async dispatchCommand(commandEnvelope: CommandEnvelope): Promise<unknown> {
-    this.logger.debug('Dispatching the following command envelope: ', commandEnvelope)
+    const logger = getLogger(this.config, 'BoosterCommandDispatcher#dispatchCommand')
+    logger.debug('Dispatching the following command envelope: ', commandEnvelope)
     if (!commandEnvelope.version) {
       throw new InvalidParameterError('The required command "version" was not present')
     }
@@ -31,7 +31,7 @@ export class BoosterCommandDispatcher {
     }
 
     const commandClass = commandMetadata.class
-    this.logger.debug('Found the following command:', commandClass.name)
+    logger.debug('Found the following command:', commandClass.name)
 
     const commandInput = await applyBeforeFunctions(
       commandEnvelope.value,
@@ -42,10 +42,10 @@ export class BoosterCommandDispatcher {
     const commandInstance = createInstance(commandClass, commandInput)
 
     const register = new Register(commandEnvelope.requestID, commandEnvelope.currentUser, commandEnvelope.context)
-    this.logger.debug('Calling "handle" method on command: ', commandClass)
+    logger.debug('Calling "handle" method on command: ', commandClass)
     const result = await commandClass.handle(commandInstance, register)
-    this.logger.debug('Command dispatched with register: ', register)
-    await RegisterHandler.handle(this.config, this.logger, register)
+    logger.debug('Command dispatched with register: ', register)
+    await RegisterHandler.handle(this.config, register)
     return result
   }
 }

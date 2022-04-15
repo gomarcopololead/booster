@@ -19,7 +19,6 @@ import { GraphQLWebsocketHandler } from '../src/services/graphql/websocket-proto
 import { ExecutionResult } from 'graphql/execution/execute'
 import { GraphQLError } from 'graphql'
 import { BoosterTokenVerifier } from '../src/booster-token-verifier'
-import { noopLogger as logger } from './helpers/logger-helper'
 
 describe('the `BoosterGraphQLDispatcher`', () => {
   afterEach(() => {
@@ -33,7 +32,7 @@ describe('the `BoosterGraphQLDispatcher`', () => {
           requestID: random.uuid(),
           eventType: 'CONNECT',
         })
-        const dispatcher = new BoosterGraphQLDispatcher(config, logger)
+        const dispatcher = new BoosterGraphQLDispatcher(config)
         await dispatcher.dispatch({})
 
         expect(config.provider.graphQL.handleResult).to.have.been.calledOnceWithExactly(null, {
@@ -49,7 +48,7 @@ describe('the `BoosterGraphQLDispatcher`', () => {
           eventType: 'DISCONNECT',
           connectionID: undefined,
         })
-        const dispatcher = new BoosterGraphQLDispatcher(config, logger)
+        const dispatcher = new BoosterGraphQLDispatcher(config)
         await dispatcher.dispatch({})
 
         expect(config.provider.readModels.deleteAllSubscriptions).not.to.have.been.called
@@ -64,13 +63,12 @@ describe('the `BoosterGraphQLDispatcher`', () => {
           eventType: 'DISCONNECT',
           connectionID: mockConnectionID,
         })
-        const dispatcher = new BoosterGraphQLDispatcher(config, logger)
+        const dispatcher = new BoosterGraphQLDispatcher(config)
         await dispatcher.dispatch({})
 
         expect(config.provider.connections.deleteData).to.have.been.calledOnceWithExactly(config, mockConnectionID)
         expect(config.provider.readModels.deleteAllSubscriptions).to.have.been.calledOnceWithExactly(
           config,
-          logger,
           mockConnectionID
         )
         expect(config.provider.graphQL.handleResult).to.have.been.calledOnceWithExactly(undefined)
@@ -87,7 +85,7 @@ describe('the `BoosterGraphQLDispatcher`', () => {
           }
           const config = mockConfigForGraphQLEnvelope(messageEnvelope)
 
-          const dispatcher = new BoosterGraphQLDispatcher(config, logger)
+          const dispatcher = new BoosterGraphQLDispatcher(config)
 
           const fakeWebsocketHandleMethod = fake()
           replace(GraphQLWebsocketHandler.prototype, 'handle', fakeWebsocketHandleMethod)
@@ -104,7 +102,7 @@ describe('the `BoosterGraphQLDispatcher`', () => {
             requestID: random.uuid(),
             eventType: 'MESSAGE',
           })
-          const dispatcher = new BoosterGraphQLDispatcher(config, logger)
+          const dispatcher = new BoosterGraphQLDispatcher(config)
           const fakeWebsocketHandleMethod = fake()
           replace(GraphQLWebsocketHandler.prototype, 'handle', fakeWebsocketHandleMethod)
 
@@ -120,7 +118,7 @@ describe('the `BoosterGraphQLDispatcher`', () => {
             eventType: 'MESSAGE',
             error: new Error(errorMessage),
           })
-          const dispatcher = new BoosterGraphQLDispatcher(config, logger)
+          const dispatcher = new BoosterGraphQLDispatcher(config)
 
           await dispatcher.dispatch({})
 
@@ -136,7 +134,7 @@ describe('the `BoosterGraphQLDispatcher`', () => {
             requestID: random.uuid(),
             eventType: 'MESSAGE',
           })
-          const dispatcher = new BoosterGraphQLDispatcher(config, logger)
+          const dispatcher = new BoosterGraphQLDispatcher(config)
 
           await dispatcher.dispatch({})
 
@@ -156,7 +154,7 @@ describe('the `BoosterGraphQLDispatcher`', () => {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any, // If not, the compiler does not allow us to provide an empty query
           })
-          const dispatcher = new BoosterGraphQLDispatcher(config, logger)
+          const dispatcher = new BoosterGraphQLDispatcher(config)
 
           await dispatcher.dispatch({})
 
@@ -175,7 +173,7 @@ describe('the `BoosterGraphQLDispatcher`', () => {
               query: 'subscription { a { x }}',
             },
           })
-          const dispatcher = new BoosterGraphQLDispatcher(config, logger)
+          const dispatcher = new BoosterGraphQLDispatcher(config)
           replace(gqlValidator, 'validate', fake.returns([]))
 
           await dispatcher.dispatch({})
@@ -211,7 +209,7 @@ describe('the `BoosterGraphQLDispatcher`', () => {
             storeSubscriptions: true,
           }
           const config = mockConfigForGraphQLEnvelope(graphQLEnvelope)
-          const dispatcher = new BoosterGraphQLDispatcher(config, logger)
+          const dispatcher = new BoosterGraphQLDispatcher(config)
           const executeFake = fake.returns(graphQLResult)
           const parseSpy = spy(gqlParser.parse)
           replace(gqlParser, 'parse', parseSpy)
@@ -262,7 +260,7 @@ describe('the `BoosterGraphQLDispatcher`', () => {
           }
 
           const config = mockConfigForGraphQLEnvelope(graphQLEnvelope)
-          const dispatcher = new BoosterGraphQLDispatcher(config, logger)
+          const dispatcher = new BoosterGraphQLDispatcher(config)
           const executeFake = fake.returns(graphQLResult)
           const parseSpy = spy(gqlParser.parse)
           replace(gqlParser, 'parse', parseSpy)
@@ -307,7 +305,7 @@ describe('the `BoosterGraphQLDispatcher`', () => {
               },
             })
 
-            const dispatcher = new BoosterGraphQLDispatcher(config, logger)
+            const dispatcher = new BoosterGraphQLDispatcher(config)
             await dispatcher.dispatch({})
 
             // Check that the handled error includes all the errors that GraphQL reported
@@ -323,7 +321,7 @@ describe('the `BoosterGraphQLDispatcher`', () => {
               },
             })
 
-            const dispatcher = new BoosterGraphQLDispatcher(config, logger)
+            const dispatcher = new BoosterGraphQLDispatcher(config)
             await dispatcher.dispatch({})
 
             // Check that the handled error includes all the errors that GraphQL reported

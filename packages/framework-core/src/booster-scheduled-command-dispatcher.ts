@@ -1,18 +1,19 @@
 import {
   BoosterConfig,
   ScheduledCommandEnvelope,
-  Logger,
   Register,
   NotFoundError,
   ScheduledCommandInterface,
 } from '@boostercloud/framework-types'
+import { getLogger } from '@boostercloud/framework-common-helpers'
 import { RegisterHandler } from './booster-register-handler'
 
 export class BoosterScheduledCommandDispatcher {
-  public constructor(readonly config: BoosterConfig, readonly logger: Logger) {}
+  public constructor(readonly config: BoosterConfig) {}
 
   public async dispatchCommand(commandEnvelope: ScheduledCommandEnvelope): Promise<void> {
-    this.logger.debug('Dispatching the following scheduled command envelope: ', commandEnvelope)
+    const logger = getLogger(this.config, 'BoosterScheduledCommandDispatcher#dispatchCommand')
+    logger.debug('Dispatching the following scheduled command envelope: ', commandEnvelope)
 
     const commandMetadata = this.config.scheduledCommandHandlers[commandEnvelope.typeName]
     if (!commandMetadata) {
@@ -20,22 +21,24 @@ export class BoosterScheduledCommandDispatcher {
     }
 
     const commandClass = commandMetadata.class
-    this.logger.debug('Found the following command:', commandClass.name)
+    logger.debug('Found the following command:', commandClass.name)
     const command = commandClass as ScheduledCommandInterface
     const register = new Register(commandEnvelope.requestID, undefined, commandEnvelope.context)
-    this.logger.debug('Calling "handle" method on command: ', command)
+    logger.debug('Calling "handle" method on command: ', command)
     await command.handle(register)
-    this.logger.debug('Command dispatched with register: ', register)
-    await RegisterHandler.handle(this.config, this.logger, register)
+    logger.debug('Command dispatched with register: ', register)
+    await RegisterHandler.handle(this.config, register)
   }
   /**
    * Entry point to dispatch events coming from the cloud provider.
    * @param request request from the cloud provider
    * @param logger
    */
-  public async dispatch(request: unknown): Promise<void> {
-    const envelopeOrError = await this.config.provider.scheduled.rawToEnvelope(request, this.logger)
-    this.logger.debug('Received ScheduledCommand envelope...', envelopeOrError)
+  // eslint-disable-next-line
+  public async dispatch(request: any): Promise<void> {
+    const logger = getLogger(this.config, 'BoosterScheduledCommandDispatcher#dispatch')
+    const envelopeOrError = await this.config.provider.scheduled.rawToEnvelope(this.config, request)
+    logger.debug('Received ScheduledCommand envelope...', envelopeOrError)
 
     await this.dispatchCommand(envelopeOrError)
   }

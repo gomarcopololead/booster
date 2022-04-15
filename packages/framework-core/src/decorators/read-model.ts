@@ -16,9 +16,11 @@ export function ReadModel(
         If you think that this is an error, try performing a clean build.`)
       }
 
+      const properties = getPropertiesMetadata(readModelClass)
+
       config.readModels[readModelClass.name] = {
         class: readModelClass,
-        properties: getPropertiesMetadata(readModelClass),
+        properties,
         authorizedRoles: attributes.authorize,
         before: attributes.before ?? [],
       }
