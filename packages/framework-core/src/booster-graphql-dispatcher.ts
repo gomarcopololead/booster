@@ -59,7 +59,7 @@ export class BoosterGraphQLDispatcher {
     }
   }
 
-  private async verifyTokenFromEnvelop(
+  private async verifyTokenFromEnvelope(
     envelope: GraphQLRequestEnvelope
   ): Promise<GraphQLRequestEnvelope | GraphQLRequestEnvelopeError> {
     if (envelope.token) {
@@ -80,7 +80,7 @@ export class BoosterGraphQLDispatcher {
   private async handleMessage(envelope: GraphQLRequestEnvelope | GraphQLRequestEnvelopeError): Promise<DispatchResult> {
     this.logger.debug('Starting GraphQL operation:', envelope)
 
-    const envelopeOrError = await this.verifyTokenFromEnvelop(envelope)
+    const envelopeOrError = await this.verifyTokenFromEnvelope(envelope)
 
     if (cameThroughSocket(envelopeOrError)) {
       return this.websocketHandler.handle(envelopeOrError)
