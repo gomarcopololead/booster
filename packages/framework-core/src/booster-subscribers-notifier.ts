@@ -73,6 +73,7 @@ export class BoosterSubscribersNotifier {
   ): Promise<unknown> {
     const context: GraphQLResolverContext = {
       connectionID: subscription.connectionID,
+      responseHeaders: {},
       requestID: subscription.requestID,
       user: subscription.currentUser,
       operation: subscription.operation,

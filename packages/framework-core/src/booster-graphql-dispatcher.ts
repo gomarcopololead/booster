@@ -1,3 +1,4 @@
+/* eslint-disable no-case-declarations */
 import {
   BoosterConfig,
   Logger,
@@ -49,7 +50,9 @@ export class BoosterGraphQLDispatcher {
       case 'CONNECT':
         return this.config.provider.graphQL.handleResult(null, graphQLWebsocketSubprotocolHeaders)
       case 'MESSAGE':
-        return this.config.provider.graphQL.handleResult(await this.handleMessage(envelopeOrError))
+        const responseHeaders = { ...this.config.defaultResponseHeaders }
+        const result = await this.handleMessage(envelopeOrError, responseHeaders)
+        return this.config.provider.graphQL.handleResult(result, responseHeaders)
       case 'DISCONNECT':
         return this.config.provider.graphQL.handleResult(await this.handleDisconnect(envelopeOrError.connectionID))
       default:
@@ -77,7 +80,10 @@ export class BoosterGraphQLDispatcher {
     return envelope
   }
 
-  private async handleMessage(envelope: GraphQLRequestEnvelope | GraphQLRequestEnvelopeError): Promise<DispatchResult> {
+  private async handleMessage(
+    envelope: GraphQLRequestEnvelope | GraphQLRequestEnvelopeError,
+    responseHeaders: Record<string, string>
+  ): Promise<DispatchResult> {
     this.logger.debug('Starting GraphQL operation:', envelope)
 
     const envelopeOrError = await this.verifyTokenFromEnvelop(envelope)
@@ -85,11 +91,12 @@ export class BoosterGraphQLDispatcher {
     if (cameThroughSocket(envelopeOrError)) {
       return this.websocketHandler.handle(envelopeOrError)
     }
-    return this.runGraphQLOperation(envelopeOrError)
+    return this.runGraphQLOperation(envelopeOrError, responseHeaders)
   }
 
   private async runGraphQLOperation(
-    envelope: GraphQLRequestEnvelope | GraphQLRequestEnvelopeError
+    envelope: GraphQLRequestEnvelope | GraphQLRequestEnvelopeError,
+    responseHeaders?: Record<string, string>
   ): Promise<AsyncIterableIterator<ExecutionResult> | ExecutionResult> {
     try {
       if ('error' in envelope) {
@@ -118,6 +125,7 @@ export class BoosterGraphQLDispatcher {
       }
       const resolverContext: GraphQLResolverContext = {
         connectionID: envelope.connectionID,
+        responseHeaders: responseHeaders || {},
         requestID: envelope.requestID,
         user: envelope.currentUser,
         operation: {
@@ -131,9 +139,9 @@ export class BoosterGraphQLDispatcher {
       switch (operationData.operation) {
         case 'query':
         case 'mutation':
-          return await this.handleQueryOrMutation(queryDocument, resolverContext)
+          return this.handleQueryOrMutation(queryDocument, resolverContext)
         case 'subscription':
-          return await this.handleSubscription(queryDocument, resolverContext)
+          return this.handleSubscription(queryDocument, resolverContext)
       }
     } catch (e) {
       this.logger.error(e)
