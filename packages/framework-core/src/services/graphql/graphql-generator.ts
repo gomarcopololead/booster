@@ -121,7 +121,7 @@ export class GraphQLGenerator {
   ): GraphQLFieldResolver<any, GraphQLResolverContext, { input: any }> {
     return async (parent, args, context, info) => {
       const commandEnvelope = toCommandEnvelope(commandClass.name, args.input, context)
-      const result = await this.commandsDispatcher.dispatchCommand(commandEnvelope)
+      const result = await this.commandsDispatcher.dispatchCommand(commandEnvelope, context)
       // It could be that the command didn't return anything
       // so in that case we return `true`, as GraphQL doesn't have a `null` type
       return result ?? true
@@ -218,7 +218,6 @@ function toCommandEnvelope(commandName: string, value: any, context: GraphQLReso
     requestID: context.requestID,
     currentUser: context.user,
     typeName: commandName,
-    responseHeaders: context.responseHeaders,
     value,
     version: 1, // TODO: How to pass the version through GraphQL?
     context: {
