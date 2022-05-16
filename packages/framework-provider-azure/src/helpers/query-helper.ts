@@ -18,10 +18,11 @@ export async function search(
   limit?: number | undefined,
   afterCursor?: Record<string, string> | undefined,
   paginatedVersion = false,
-  order?: SortFor<unknown>
+  order?: SortFor<unknown>,
+  projections = '*'
 ): Promise<Array<any> | ReadModelListResult<any>> {
   const filterExpression = buildFilterExpression(filters)
-  const queryDefinition = `SELECT * FROM c ${filterExpression !== '' ? `WHERE ${filterExpression}` : filterExpression}`
+  const queryDefinition = `SELECT ${projections} FROM c ${filterExpression !== '' ? `WHERE ${filterExpression}` : filterExpression}`
   const queryWithOrder = queryDefinition + buildOrderExpression(order)
   let finalQuery = queryWithOrder
   if (paginatedVersion && limit) {

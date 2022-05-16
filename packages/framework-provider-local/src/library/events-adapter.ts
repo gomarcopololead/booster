@@ -34,7 +34,7 @@ export async function readEntityEventsSince(
       $gt: fromTime,
     },
   }
-  const result: Array<EventEnvelope> = await eventRegistry.query(query)
+  const result = (await eventRegistry.query(query)) as Array<EventEnvelope>
 
   logger.debug(
     `[EventsAdapter#readEntityEventsSince] Loaded events for entity ${entityTypeName} with ID ${entityID} with result:`,

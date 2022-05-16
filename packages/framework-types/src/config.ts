@@ -88,6 +88,7 @@ export class BoosterConfig {
     return {
       applicationStack: applicationStackName,
       eventsStore: applicationStackName + '-events-store',
+      eventsIdsStore: applicationStackName + '-events-ids-store',
       subscriptionsStore: applicationStackName + '-subscriptions-store',
       connectionsStore: applicationStackName + '-connections-store',
       forReadModel(readModelName: string): string {
@@ -232,6 +233,7 @@ export const JWT_ENV_VARS = {
 interface ResourceNames {
   applicationStack: string
   eventsStore: string
+  eventsIdsStore: string
   subscriptionsStore: string
   connectionsStore: string
   forReadModel(entityName: string): string
