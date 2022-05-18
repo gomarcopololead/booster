@@ -3,7 +3,7 @@ import { expect } from '../expect'
 import { createStubInstance, fake, restore, stub, SinonStubbedInstance } from 'sinon'
 import { CosmosClient } from '@azure/cosmos'
 import { BoosterConfig, EventSearchParameters, Logger } from '@boostercloud/framework-types'
-import { searchEvents, searchEventsIds } from '../../src/library/events-searcher-adapter'
+import { searchEvents, searchEntitiesIds } from '../../src/library/events-searcher-adapter'
 import * as searchModule from '../../src/helpers/query-helper'
 
 describe('Events Searcher adapter', () => {
@@ -181,7 +181,7 @@ describe('Events Searcher adapter', () => {
     })
   })
 
-  describe('The "searchEventsIds" method', () => {
+  describe('The "searchEntitiesIDs" method', () => {
     let mockLogger: Logger
     let mockConfig: BoosterConfig
 
@@ -218,7 +218,7 @@ describe('Events Searcher adapter', () => {
       const limit = 1
       const afterCursor = { id: '1' }
       const entityTypeName = 'entity'
-      await searchEventsIds(mockCosmosDbClient as any, mockConfig, mockLogger, limit, afterCursor, entityTypeName)
+      await searchEntitiesIds(mockCosmosDbClient as any, mockConfig, mockLogger, limit, afterCursor, entityTypeName)
 
       expect(mockSearch).to.have.been.calledWithExactly(
         mockCosmosDbClient,
@@ -239,7 +239,7 @@ describe('Events Searcher adapter', () => {
       const eventStoreName = 'new-booster-app-app-events-store'
       const limit = 1
       const entityTypeName = 'entity'
-      await searchEventsIds(mockCosmosDbClient as any, mockConfig, mockLogger, limit, undefined, entityTypeName)
+      await searchEntitiesIds(mockCosmosDbClient as any, mockConfig, mockLogger, limit, undefined, entityTypeName)
 
       expect(mockSearch).to.have.been.calledWithExactly(
         mockCosmosDbClient,

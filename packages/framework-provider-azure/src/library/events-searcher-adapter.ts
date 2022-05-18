@@ -3,7 +3,7 @@ import {
   EventSearchParameters,
   EventSearchResponse,
   Logger,
-  PaginatedEventsIdsResult,
+  PaginatedEntitiesIdsResult,
 } from '@boostercloud/framework-types'
 import { CosmosClient } from '@azure/cosmos'
 import { search } from '../helpers/query-helper'
@@ -39,14 +39,14 @@ export async function searchEvents(
   return eventEnvelopes
 }
 
-export async function searchEventsIds(
+export async function searchEntitiesIds(
   cosmosDb: CosmosClient,
   config: BoosterConfig,
   logger: Logger,
   limit: number,
   afterCursor: Record<string, string> | undefined,
   entityTypeName: string
-): Promise<PaginatedEventsIdsResult> {
+): Promise<PaginatedEntitiesIdsResult> {
   logger.debug(
     `Initiating a paginated events search. limit: ${limit}, afterCursor: ${JSON.stringify(
       afterCursor
@@ -66,7 +66,7 @@ export async function searchEventsIds(
     true,
     undefined,
     'DISTINCT c.entityID'
-  )) as PaginatedEventsIdsResult
+  )) as PaginatedEntitiesIdsResult
   logger.debug('Unique events search result', result)
   return result
 }

@@ -8,7 +8,7 @@ import {
   FilterFor,
   FinderByKeyFunction,
   Logger,
-  PaginatedEventsIdsResult,
+  PaginatedEntitiesIdsResult,
   ReadModelInterface,
   ReadOnlyNonEmptyArray,
   Searcher,
@@ -142,15 +142,12 @@ export class Booster {
     })
   }
 
-  public static async eventsIds(
+  public static async entitiesIDs(
     entityTypeName: string,
     limit: number,
     afterCursor?: Record<string, string>
-  ): Promise<PaginatedEventsIdsResult> {
-    if (!this.config.provider.events.searchEventsIds) {
-      throw new Error('Paginated search not supported by the provider')
-    }
-    return await this.config.provider.events.searchEventsIds(
+  ): Promise<PaginatedEntitiesIdsResult> {
+    return await this.config.provider.events.searchEntitiesIDs(
       this.config,
       this.logger,
       limit,
