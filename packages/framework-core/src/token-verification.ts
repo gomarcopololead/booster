@@ -25,32 +25,34 @@ export const sanitizeToken = (token: string): string => {
   return token.replace('Bearer ', '')
 }
 
-export const getKey = (context: TokenVerifier) => (header: jwt.JwtHeader, callback: jwt.SigningKeyCallback): void => {
-  if (!header.kid) {
-    callback(new Error('JWT kid not found'))
-    return
-  }
-  if (!isJwskUriTokenVerifier(context)) {
-    callback(new Error('JwskUri not found in context'))
-    return
-  }
-
-  const jwksUri = context.jwksUri
-  const client = jwksRSA({
-    jwksUri,
-    cache: true,
-    cacheMaxAge: 15 * 60 * 1000, // 15 Minutes, at least to be equal to AWS max lambda limit runtime
-  })
-
-  client.getSigningKey(header.kid, function (err: Error | null, key: jwksRSA.SigningKey) {
-    if (err) {
-      callback(err, '')
+export const getKey =
+  (context: TokenVerifier) =>
+  (header: jwt.JwtHeader, callback: jwt.SigningKeyCallback): void => {
+    if (!header.kid) {
+      callback(new Error('JWT kid not found'))
       return
     }
-    const signingKey = key.getPublicKey()
-    callback(null, signingKey)
-  })
-}
+    if (!isJwskUriTokenVerifier(context)) {
+      callback(new Error('JwskUri not found in context'))
+      return
+    }
+
+    const jwksUri = context.jwksUri
+    const client = jwksRSA({
+      jwksUri,
+      cache: true,
+      cacheMaxAge: 15 * 60 * 1000, // 15 Minutes, at least to be equal to AWS max lambda limit runtime
+    })
+
+    client.getSigningKey(header.kid, function (err: Error | null, key: jwksRSA.SigningKey) {
+      if (err) {
+        callback(err, '')
+        return
+      }
+      const signingKey = key.getPublicKey()
+      callback(null, signingKey)
+    })
+  }
 
 export const tokenToUserEnvelope = (decodedToken: any, rolesClaim?: string): UserEnvelope => {
   const payload = decodedToken.payload
@@ -81,11 +83,11 @@ export const validateToken = (
       }
 
       const jwtToken = decoded as any
-      (extraValidation ?? (() => Promise.resolve()))(jwtToken, token)
-          .then(() => {
-            resolve(jwtToken)
-          })
-          .catch(reject)
+      ;(extraValidation ?? (() => Promise.resolve()))(jwtToken, token)
+        .then(() => {
+          resolve(jwtToken)
+        })
+        .catch(reject)
     })
   })
 }
